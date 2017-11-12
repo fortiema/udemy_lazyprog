@@ -68,7 +68,7 @@ def main():
     del test
     Yval_ind = y2indicator(Yval)
 
-    max_iter = 50
+    max_iter = 10
     print_per = 25
 
     N = X.shape[0]
@@ -169,7 +169,7 @@ def main():
                             pred[k*batch_size:(k*batch_size + batch_size)] = sess.run(predict_op, feed_dict={tf_X: Xval_batch})
 
                         LL.append(cost)
-                        print(pred[0], Yval[0], pred[-1], Yval_batch[-1])
+                        # print(pred[0], Yval[0], pred[-1], tf.argmax(Yval_batch[-1], 1))
                         err = error_rate(pred, Yval)
                         print("[{0:3}] {1:5}/{2:} - {3:} - C: {4:.3f} | E: {5:.3f}".format(i, j, nb_batches, datetime.now()-start, cost, err))
 

@@ -8,58 +8,57 @@ import numpy as np
 from sklearn.utils import shuffle
 import tensorflow as tf
 
-from util import error_rate, get_data, indicators, init_w_b
+from layers import ConvMaxPool2D, Dense, Flatten
+from util import error_rate, get_data_image, indicators, init_w_b
 
 
-LOGS_PATH='logs/facial_rec/ann'
+LOGS_PATH='logs/facial_rec/cnn'
 
 
-class Layer:
-    def __init__(self, M1, M2, f=None, layer_id=None):
-        self.M1 = M1
-        self.M2 = M2
-        self.f = f or tf.nn.relu
-        self.id = layer_id or str(uuid.uuid4())[:4]
-        W, b = init_w_b(M1, M2)
+class CNN:
+    def __init__(self, input_size, output_size, conv_layers, dense_layers):
+        """Constructs network per specification
 
-        self.W = tf.Variable(W, name='W_{}'.format(self.id))
-        self.b = tf.Variable(b, name='b_{}'.format(self.id))
+        Arguments:
+            input_size (Tuple): Pixel size (2D) of raw images entering network
+            output_size (int): Number of classes to predict
+            conv_layers (list[Tuple]): Configuration of each convolution layer
+            dense_layers (list[int]): Configuration of each fully connected layer
 
-        self.params = [self.W, self.b]
+        """
+        self.input = input_size
+        self.K = output_size
+        self.conv_layers = conv_layers
+        self.dense_layers = dense_layers
 
-    def forward(self, X, train):
-        return self.f(tf.matmul(X, self.W) + self.b)
-
-
-class ANN:
-    def __init__(self, layers_units):
-        self.layers_units = layers_units
-
-    def set_session(self, session):
-        self.session = session
-
-    def fit(self, X, Y, Xval, Yval, lr=10e-7, mu=0.99, decay=0.99, epochs=100, batch_size=128, show_fig=False):
-        Yval_flat = np.argmax(Yval, axis=1)
-
-        # Setup network
-        N, D = X.shape
-        _, K = Y.shape
         self.layers = []
-        M1 = D
-        for idx, M2 in enumerate(self.layers_units):
-            h = Layer(M1, M2, None, idx)
+
+        for idx, W in enumerate(self.conv_layers):
+            h = ConvMaxPool2D(W, (2,2), layer_id='conv{}'.format(idx))
+            self.layers.append(h)
+
+        self.layers.append(Flatten())
+
+        M1 = self.conv_layers[-1][-1] * np.prod(np.divide(self.input, len(conv_layers) * 2).astype(np.int32))
+        for idx, M2 in enumerate(self.dense_layers):
+            h = Dense(M1, M2, tf.nn.relu, layer_id='dense{}'.format(idx))
             self.layers.append(h)
             M1 = M2
 
         # Setup final layer
-        out = Layer(M1, K, tf.nn.softmax, 'out')
+        out = Dense(M1, self.K, tf.nn.softmax, 'out')
         self.layers.append(out)
 
-        # Regroup all params
-        # self.params = [h.params for h in self.layers]
+    def set_session(self, session):
+        self.session = session
 
-        tf_X = tf.placeholder(tf.float32, shape=(None, D), name='X')
-        tf_Y = tf.placeholder(tf.int32, shape=(None, K), name='Y')
+    def fit(self, X, Y, Xval, Yval, epochs=100, batch_size=128, show_fig=False):
+        N = X.shape[0]
+        W, H, D = X.shape[1:]
+        Yval_flat = np.argmax(Yval, axis=1)
+
+        tf_X = tf.placeholder(tf.float32, shape=(None, W, H, D), name='X')
+        tf_Y = tf.placeholder(tf.int32, shape=(None, self.K), name='Y')
         YZ = self.forward(tf_X, train=True)
 
         # reg_cost = lr * sum([sum(tf.nn.l2_loss(p)) for p in self.params])
@@ -111,8 +110,6 @@ class ANN:
                     print(p[0], Yval_flat[0], p[-1], Yval_flat[-1])
                     print("[{0:3}] {1:6}/{2:} - C: {3:.3f} | E: {4:.3f}".format(i+1, j+1, n_batches, c, e))
 
-            # print("[{0:3}] Train Acc.: {1:.3f} | Test Acc.: {2:.3f}".format(i+1, self.score(X, Y), self.score(Xval, Yval)))
-
         if show_fig:
             plt.plot(costs)
             plt.show()
@@ -133,9 +130,14 @@ class ANN:
 
 
 def main(fname):
-    X, Y = get_data(fname)
+    X, Y, D = get_data_image(fname)
 
-    model = ANN([2000, 1000, 500])
+    model = CNN(
+        input_size=(D, D),
+        output_size=7,
+        conv_layers=[(5, 5, X.shape[-1], 20), (5, 5, 20, 50)],
+        dense_layers=[2000, 1000, 500]
+    )
     session = tf.InteractiveSession()
     model.set_session(session)
 

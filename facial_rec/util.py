@@ -79,5 +79,5 @@ def get_data_image(fname, limit=None, balance_ones=True):
     X, Y = get_data(fname, limit, balance_ones)
     N, D = X.shape
     d = int(np.sqrt(D))
-    X = X.reshape(N, 1, d, d)
-    return X, Y
+    X = X.reshape(N, d, d, 1)
+    return X, Y, d
