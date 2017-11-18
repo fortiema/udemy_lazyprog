@@ -8,7 +8,7 @@ from util import init_w_b
 
 class Dense:
     """Fully-connected Layer object"""
-    def __init__(self, M1, M2, f=None, layer_id=None):
+    def __init__(self, M1, M2, f=None, dropout=True, layer_id=None):
         self.M1 = M1
         self.M2 = M2
         self.f = f or tf.nn.relu
@@ -17,10 +17,14 @@ class Dense:
 
         self.W = tf.Variable(W, name='W_{}'.format(self.id))
         self.b = tf.Variable(b, name='b_{}'.format(self.id))
-        self.params = [self.W, self.b]
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.W)
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.b)
+
+        self.dropout = dropout
 
     def forward(self, X, train):
-        return self.f(tf.matmul(X, self.W) + self.b)
+        out =  self.f(tf.matmul(X, self.W) + self.b)
+        return tf.nn.dropout(out, 0.5) if self.dropout else out
 
 
 class ConvMaxPool2D:
@@ -32,17 +36,20 @@ class ConvMaxPool2D:
 
         self.W = tf.Variable(W.astype(np.float32), name='W_{}'.format(self.id))
         self.b = tf.Variable(b.astype(np.float32), name='b_{}'.format(self.id))
-        self.params = [self.W, self.b]
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.W)
+        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self.b)
 
     def forward(self, X, train):
-        conv_out = tf.nn.conv2d(X, self.W, strides=[1, 1, 1, 1], padding='SAME')
-        conv_out = tf.nn.bias_add(conv_out, self.b)
+        out = tf.nn.conv2d(X, self.W, strides=[1, 1, 1, 1], padding='SAME')
+        out = tf.nn.relu(tf.nn.bias_add(out, self.b))
+        out = tf.nn.dropout(out, 0.5)
         return tf.nn.max_pool(
-            conv_out,
+            out,
             ksize=[1, 2, 2, 1],
             strides=[1, 2, 2, 1],
             padding='SAME'
         )
+        
 
 
 class Flatten:

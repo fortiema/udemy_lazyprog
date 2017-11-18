@@ -33,20 +33,22 @@ class CNN:
 
         self.layers = []
 
+        pool_size = 2
+
         for idx, W in enumerate(self.conv_layers):
-            h = ConvMaxPool2D(W, (2,2), layer_id='conv{}'.format(idx))
+            h = ConvMaxPool2D(W, (pool_size, pool_size), layer_id='conv{}'.format(idx))
             self.layers.append(h)
 
         self.layers.append(Flatten())
 
-        M1 = self.conv_layers[-1][-1] * np.prod(np.divide(self.input, len(conv_layers) * 2).astype(np.int32))
+        M1 = self.conv_layers[-1][-1] * np.prod(np.divide(self.input, len(conv_layers) * pool_size).astype(np.int32))
         for idx, M2 in enumerate(self.dense_layers):
             h = Dense(M1, M2, tf.nn.relu, layer_id='dense{}'.format(idx))
             self.layers.append(h)
             M1 = M2
 
         # Setup final layer
-        out = Dense(M1, self.K, tf.nn.softmax, 'out')
+        out = Dense(M1, self.K, lambda x: x, False, 'out')
         self.layers.append(out)
 
     def set_session(self, session):
@@ -61,15 +63,20 @@ class CNN:
         tf_Y = tf.placeholder(tf.int32, shape=(None, self.K), name='Y')
         YZ = self.forward(tf_X, train=True)
 
+        # reg_losses = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
+        _vars = tf.trainable_variables()
+        l2_loss = tf.add_n([ tf.nn.l2_loss(v) for v in _vars if 'bias' not in v.name ]) * 0.001
+
         # reg_cost = lr * sum([sum(tf.nn.l2_loss(p)) for p in self.params])
         cost_op = tf.reduce_sum(
             tf.nn.softmax_cross_entropy_with_logits(
                 logits=YZ,
                 labels=tf_Y
             )
-        )
+        ) + l2_loss
+
         pred_op = tf.argmax(YZ, 1)
-        train_op = tf.train.AdamOptimizer(10e-5).minimize(cost_op)
+        train_op = tf.train.AdamOptimizer(10e-4).minimize(cost_op)
 
         with tf.name_scope('Accuracy'):
             # Accuracy
@@ -132,11 +139,14 @@ class CNN:
 def main(fname):
     X, Y, D = get_data_image(fname)
 
+    # TF image format is (X, W, H, C)
+    X = X.transpose((0, 2, 3, 1))
+
     model = CNN(
         input_size=(D, D),
         output_size=7,
-        conv_layers=[(5, 5, X.shape[-1], 20), (5, 5, 20, 50)],
-        dense_layers=[2000, 1000, 500]
+        conv_layers=[(5, 5, X.shape[-1], 10), (5, 5, 10, 20)],
+        dense_layers=[500, 300]
     )
     session = tf.InteractiveSession()
     model.set_session(session)
