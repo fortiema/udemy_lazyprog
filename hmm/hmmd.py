@@ -54,13 +54,16 @@ class HMM:
                 beta = np.zeros((T, self.M))
                 beta[-1] = 1
                 for t in range(T-2, -1, -1):
-                    beta[t] = self.A.dot(self.B[:, x[t+1]]) * beta[t+1]
+                    beta[t] = self.A.dot(self.B[:, x[t+1]] * beta[t+1])
                 betas.append(beta)
 
+            assert(np.all(P > 0))
             cost = np.sum(np.log(P))
             costs.append(cost)
 
+            # Update pi, A, B
             self.pi = np.sum((alphas[n][0] * betas[n][0])/P[n] for n in range(N)) / N
+
             d1 = np.zeros((self.M, 1))
             d2 = np.zeros((self.M, 1))
             a_num = 0
@@ -81,17 +84,18 @@ class HMM:
 
                 b_num_n = np.zeros((self.M, V))
                 for i in range (self.M):
-                    for j in range(V):
-                        for t in range(T):
-                            if x[t] == j:
-                                b_num_n[i,j] += alphas[n][t,i] * betas[n][t,i]
-                b_num = b_num_n / P[n]
+                    for t in range(T):
+                        b_num_n[i,x[t]] += alphas[n][t,i] * betas[n][t,i]
+                b_num += b_num_n / P[n]
 
             self.A = a_num / d1
             self.B = b_num / d2
-            print('\tpi: {}'.format(self.pi))
-            print('\tA: {}'.format(self.A))
-            print('\tB: {}'.format(self.B))
+        print('\tpi: {}'.format(self.pi))
+        print('\tA: {}'.format(self.A))
+        print('\tB: {}'.format(self.B))
+
+        plt.plot(costs)
+        plt.show()
 
     def likelihood(self, x):
         T = len(x)
