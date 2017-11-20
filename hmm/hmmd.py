@@ -118,7 +118,7 @@ class HMM:
                 delta[t,j] = np.max(delta[t-1]*self.A[:,j]) * self.B[j,x[t]]
                 psi[t,j] = np.argmax(delta[t-1]*self.A[:,j])
 
-        states = np.zeros(t, dtype=np.int32)
+        states = np.zeros(T, dtype=np.int32)
         states[T-1] = np.argmax(delta[T-1])
         for t in range(T-2, -1, -1):
             states[t] = psi[t+1, states[t+1]]
@@ -127,7 +127,7 @@ class HMM:
 def fit_coin():
     X = []
     for line in open('large_files/coin_data.txt'):
-        x = [1 if e == 'H' else 0 for e in line.rstrip()]
+        x = [1 if e == 'H' else 0 for e in line.rstrip() if e]
         X.append(x)
 
     model = HMM(2)
