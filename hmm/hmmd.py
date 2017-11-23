@@ -90,6 +90,7 @@ class HMM:
 
             self.A = a_num / d1
             self.B = b_num / d2
+
         print('\tpi: {}'.format(self.pi))
         print('\tA: {}'.format(self.A))
         print('\tB: {}'.format(self.B))
