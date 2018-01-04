@@ -2,6 +2,8 @@
 
 Learns the writing style from 2 different writers (Robert Frost & Edgar Allan Poe).
 Model is then able to predict who is more likely to have written new sentences.
+
+Currently based on POS tags (fine-grained) and not words themselves to limit complexity.
 """
 import string
 
@@ -59,7 +61,6 @@ def get_lines(fname):
             if line:
                 count += 1
                 yield line
-    print('Read {} lines from {}'.format(count, fname))
 
 
 def get_data():

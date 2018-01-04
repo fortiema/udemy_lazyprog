@@ -49,7 +49,6 @@ class ConvMaxPool2D:
             strides=[1, 2, 2, 1],
             padding='SAME'
         )
-        
 
 
 class Flatten:
