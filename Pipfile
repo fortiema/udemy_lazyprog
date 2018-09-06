@@ -1,0 +1,25 @@
+[[source]]
+
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+name = "pypi"
+
+
+[packages]
+
+theano = "*"
+tensorflow-gpu = "*"
+scikit-learn = "*"
+matplotlib = "*"
+pycuda = "*"
+cython = "*"
+spacy = "*"
+
+
+[dev-packages]
+
+
+
+[requires]
+
+python_version = "3.6"
