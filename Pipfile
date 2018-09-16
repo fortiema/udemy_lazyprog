@@ -18,6 +18,8 @@ spacy = "*"
 
 [dev-packages]
 
+black = "*"
+"flake8" = "*"
 
 
 [requires]
