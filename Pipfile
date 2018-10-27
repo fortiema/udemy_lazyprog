@@ -1,27 +1,21 @@
 [[source]]
-
 url = "https://pypi.python.org/simple"
 verify_ssl = true
 name = "pypi"
 
-
 [packages]
-
 theano = "*"
-tensorflow-gpu = "*"
+tensorflow-gpu = "==1.10.1"
 scikit-learn = "*"
 matplotlib = "*"
 pycuda = "*"
 cython = "*"
 spacy = "*"
-
+pandas = "*"
+keras = "*"
 
 [dev-packages]
-
-black = "*"
 "flake8" = "*"
 
-
 [requires]
-
 python_version = "3.6"
